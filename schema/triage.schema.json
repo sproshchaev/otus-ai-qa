@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ответ LLM-шага разбора прогона тестов",
+  "type": "object",
+  "required": ["summary", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "summary": { "type": "string", "minLength": 1 },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["reason", "tests", "hypothesis", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "reason": { "enum": ["ok", "bug", "flaky", "env", "data", "slow"] },
+          "tests": { "type": "array", "items": { "type": "string" } },
+          "hypothesis": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

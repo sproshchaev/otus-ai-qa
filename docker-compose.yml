@@ -1,0 +1,14 @@
+# Стенд для воспроизведения демо занятия 17.
+# На Apple Silicon у Docker нет доступа к GPU: модель здесь идёт на CPU и заметно медленнее.
+# На занятии Ollama запускается нативно на том же порту 11434.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: otus-ai-qa-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  ollama-models:

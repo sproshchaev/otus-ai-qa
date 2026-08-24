@@ -1,0 +1,10 @@
+server:
+  port: ${SERVICE_PORT:8080}
+
+spring:
+  application:
+    name: user-service
+
+logging:
+  level:
+    ru.otus.aiqa: INFO
