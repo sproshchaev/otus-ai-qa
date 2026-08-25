@@ -1,0 +1,35 @@
+name: Maven Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-deps
+          restore-keys: maven-deps
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Maven
+        run: |
+          curl -fsSL https://apache.org/dist/maven/maven-3/$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-3/RELEASE.txt)/bin/maven-3.$(curl -s https://raw.githubusercontent.com/apache/maven/maven-

@@ -41,9 +41,20 @@ confidence — насколько уверен в причине: 1.0 когда
 }
 
 Данные прогона:
-- всего тестов: {{TOTAL}}
-- упало: {{FAILED}}
-- суммарная длительность, с: {{DURATION}}
+- всего тестов: 6
+- упало: 3
+- суммарная длительность, с: 14,3
 
 Тесты:
-{{CASES}}
+- ru.otus.aiqa.apitests.UserCrudTest#createsUser | 0,412 c | passed
+- ru.otus.aiqa.apitests.UserCrudTest#readsUser | 0,108 c | passed
+- ru.otus.aiqa.apitests.UserValidationTest#rejectsAgeOutsideBoundaries | 0,221 c | passed
+- ru.otus.aiqa.apitests.UserPaginationTest#pagesCoverAllUsers | 0,365 c | org.opentest4j.AssertionFailedError: org.opentest4j.AssertionFailedError: постраничный обход должен вернуть ровно total элементов ==> expected: <7> but was: <6>
+	at ru.otus.aiqa.apitests.UserPaginationTest.pagesCoverAllUsers(UserPaginationTest.java:41)
+	последняя страница вернула 1 элемент вместо 2 при size=3 и total=7
+- ru.otus.aiqa.apitests.UserCrudTest#activatesUser | 10,842 c | java.lang.AssertionError: java.lang.AssertionError: Expected status code <200> but was <503>
+	at ru.otus.aiqa.apitests.UserCrudTest.activatesUser(UserCrudTest.java:98)
+	предыдущий прогон этого же коммита: passed; повтор через минуту: passed
+- ru.otus.aiqa.apitests.NotifierIntegrationTest#sendsWelcomeEmail | 2,370 c | java.net.ConnectException: java.net.ConnectException: Connection refused: localhost/127.0.0.1:9099
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at ru.otus.aiqa.apitests.NotifierIntegrationTest.sendsWelcomeEmail(NotifierIntegrationTest.java:27)

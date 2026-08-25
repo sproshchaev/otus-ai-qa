@@ -40,8 +40,9 @@ final class ResponseValidator {
             if (!finding.path("tests").isArray()) {
                 problems.add(prefix + ".tests должен быть массивом");
             }
-            if (!finding.path("hypothesis").isTextual()) {
-                problems.add(prefix + ".hypothesis должен быть строкой");
+            JsonNode hypothesis = finding.path("hypothesis");
+            if (!hypothesis.isTextual() || hypothesis.asText().isBlank()) {
+                problems.add(prefix + ".hypothesis должен быть непустой строкой");
             }
             double confidence = finding.path("confidence").asDouble(-1);
             if (confidence < 0 || confidence > 1) {

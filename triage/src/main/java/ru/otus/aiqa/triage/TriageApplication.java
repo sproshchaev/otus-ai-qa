@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,7 +76,26 @@ public final class TriageApplication {
         String prompt = Files.readString(promptFile);
         String raw = new OllamaClient(OLLAMA_URL, MODEL, Duration.ofSeconds(120))
                 .generateWithRetry(prompt, false);
-        System.out.println(raw);
+        System.out.println(stripCodeFence(raw));
+    }
+
+    /**
+     * Модель охотно оборачивает YAML в ```yml … ``` вопреки инструкции «только YAML».
+     * Ограждение снимаем сами: линтеры на таком файле спотыкаются о первую же строку.
+     * Проверено 26.08.2026 на llama3.1:8b — actionlint падал с «could not parse as YAML».
+     */
+    static String stripCodeFence(String text) {
+        String body = text.strip();
+        if (!body.startsWith("```")) {
+            return body;
+        }
+        int firstLineEnd = body.indexOf('\n');
+        if (firstLineEnd < 0) {
+            return body;
+        }
+        body = body.substring(firstLineEnd + 1);
+        int closing = body.lastIndexOf("```");
+        return (closing < 0 ? body : body.substring(0, closing)).strip();
     }
 
     /** Кэш по хешу «промпт + модель»: одинаковый вход — тот же ответ, ноль вызовов и токенов. */
@@ -145,8 +165,7 @@ public final class TriageApplication {
         md.append(result.path("summary").asText()).append("\n\n");
         md.append("| Причина | Тесты | Гипотеза | Уверенность |\n|---|---|---|---|\n");
         for (JsonNode finding : result.path("findings")) {
-            String tests = String.join(", ", MAPPER.convertValue(finding.path("tests"), List.class)
-                    .stream().map(String::valueOf).toList());
+            String tests = formatTests(finding.path("tests"));
             md.append("| `").append(finding.path("reason").asText()).append("` | ")
                     .append(tests).append(" | ")
                     .append(finding.path("hypothesis").asText()).append(" | ")
@@ -154,6 +173,22 @@ public final class TriageApplication {
         }
         md.append("\n_Шаг advisory: он ничего не блокирует и не меняет статус сборки._\n");
         return md.toString();
+    }
+
+    /**
+     * Список тестов в отчёте обрезаем: на зелёном прогоне модель охотно перечисляет все два десятка,
+     * и таблица становится нечитаемой. Проверено 26.08.2026 на llama3.1:8b.
+     */
+    private static String formatTests(JsonNode tests) {
+        List<String> names = new ArrayList<>();
+        tests.forEach(node -> names.add(node.asText()));
+        if (names.isEmpty()) {
+            return "—";
+        }
+        if (names.size() <= 3) {
+            return String.join(", ", names);
+        }
+        return String.join(", ", names.subList(0, 3)) + " и ещё " + (names.size() - 3);
     }
 
     /** Результат уходит и в лог, и в сводку GitHub Actions, если она доступна. */
