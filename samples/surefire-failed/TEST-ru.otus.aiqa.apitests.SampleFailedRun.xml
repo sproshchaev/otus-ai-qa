@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Сохранённый отчёт о прогоне с падениями. Нужен как пример входа для LLM-шага:
+  в нём три падения разной природы, и на нём видно, что шаг их различает.
+  Ничего специально не ломаем в рабочих тестах — этот файл лежит здесь как данные.
+-->
+<testsuite name="ru.otus.aiqa.apitests.SampleFailedRun" tests="6" failures="2" errors="1" skipped="0" time="14.318">
+  <testcase name="createsUser" classname="ru.otus.aiqa.apitests.UserCrudTest" time="0.412"/>
+  <testcase name="readsUser" classname="ru.otus.aiqa.apitests.UserCrudTest" time="0.108"/>
+  <testcase name="rejectsAgeOutsideBoundaries" classname="ru.otus.aiqa.apitests.UserValidationTest" time="0.221"/>
+  <testcase name="pagesCoverAllUsers" classname="ru.otus.aiqa.apitests.UserPaginationTest" time="0.365">
+    <failure type="org.opentest4j.AssertionFailedError" message="постраничный обход должен вернуть ровно total элементов ==&gt; expected: &lt;7&gt; but was: &lt;6&gt;">
+org.opentest4j.AssertionFailedError: постраничный обход должен вернуть ровно total элементов ==&gt; expected: &lt;7&gt; but was: &lt;6&gt;
+	at ru.otus.aiqa.apitests.UserPaginationTest.pagesCoverAllUsers(UserPaginationTest.java:41)
+	последняя страница вернула 1 элемент вместо 2 при size=3 и total=7
+    </failure>
+  </testcase>
+  <testcase name="activatesUser" classname="ru.otus.aiqa.apitests.UserCrudTest" time="10.842">
+    <failure type="java.lang.AssertionError" message="Expected status code &lt;200&gt; but was &lt;503&gt;">
+java.lang.AssertionError: Expected status code &lt;200&gt; but was &lt;503&gt;
+	at ru.otus.aiqa.apitests.UserCrudTest.activatesUser(UserCrudTest.java:98)
+	предыдущий прогон этого же коммита: passed; повтор через минуту: passed
+    </failure>
+  </testcase>
+  <testcase name="sendsWelcomeEmail" classname="ru.otus.aiqa.apitests.NotifierIntegrationTest" time="2.370">
+    <error type="java.net.ConnectException" message="Connection refused: localhost/127.0.0.1:9099">
+java.net.ConnectException: Connection refused: localhost/127.0.0.1:9099
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at ru.otus.aiqa.apitests.NotifierIntegrationTest.sendsWelcomeEmail(NotifierIntegrationTest.java:27)
+    </error>
+  </testcase>
+</testsuite>

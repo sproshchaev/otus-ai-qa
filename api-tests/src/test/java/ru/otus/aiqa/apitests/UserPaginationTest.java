@@ -1,7 +1,9 @@
 package ru.otus.aiqa.apitests;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,7 @@ class UserPaginationTest extends ApiTestBase {
             collected += onPage;
         }
 
-        org.junit.jupiter.api.Assertions.assertEquals(total, collected,
+        assertEquals(total, collected,
                 "постраничный обход должен вернуть ровно total элементов");
     }
 
@@ -45,7 +47,7 @@ class UserPaginationTest extends ApiTestBase {
                 .get("/api/users")
                 .then()
                 .statusCode(200)
-                .body("items.size()", org.hamcrest.Matchers.equalTo(0))
+                .body("items.size()", equalTo(0))
                 .body("total", greaterThanOrEqualTo(0));
     }
 }

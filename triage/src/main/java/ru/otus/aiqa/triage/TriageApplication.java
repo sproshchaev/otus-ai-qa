@@ -27,6 +27,8 @@ public final class TriageApplication {
     private static final String MODEL = env("OLLAMA_MODEL", "llama3.1:8b");
     private static final Path CACHE_DIR = Path.of(env("TRIAGE_CACHE", ".triage-cache"));
     private static final boolean ENABLED = Boolean.parseBoolean(env("TRIAGE_ENABLED", "true"));
+    private static final Path PROMPT = Path.of(env("TRIAGE_PROMPT", "prompts/triage.md"));
+    private static final Path OUT_DIR = Path.of(env("TRIAGE_OUT", "triage/target"));
 
     public static void main(String[] args) {
         try {
@@ -52,9 +54,13 @@ public final class TriageApplication {
 
     private static void triage(Path input) throws Exception {
         SurefireReader.RunReport report = SurefireReader.read(input);
-        String prompt = renderPrompt(Files.readString(Path.of("prompts/triage.md")), report);
+        if (!Files.isReadable(PROMPT)) {
+            throw new IllegalStateException("не найден промпт " + PROMPT.toAbsolutePath()
+                    + " — запускать из корня репозитория или задать TRIAGE_PROMPT");
+        }
+        String prompt = renderPrompt(Files.readString(PROMPT), report);
 
-        Path artifacts = Path.of("triage/target");
+        Path artifacts = OUT_DIR;
         Files.createDirectories(artifacts);
         Files.writeString(artifacts.resolve("triage-prompt.txt"), prompt);
 
@@ -119,7 +125,9 @@ public final class TriageApplication {
         String cases = report.cases().stream()
                 .map(c -> "- %s#%s | %.3f c | %s".formatted(
                         c.className(), c.name(), c.timeSeconds(),
-                        c.failed() ? c.failureType() + ": " + c.failureMessage() : "passed"))
+                        c.failed()
+                                ? c.failureType() + ": " + Sanitizer.mask(c.failureMessage())
+                                : "passed"))
                 .collect(Collectors.joining("\n"));
         return template
                 .replace("{{TOTAL}}", String.valueOf(report.total()))
@@ -161,8 +169,8 @@ public final class TriageApplication {
             }
         }
         try {
-            Files.createDirectories(Path.of("triage/target"));
-            Files.writeString(Path.of("triage/target/triage.md"), markdown);
+            Files.createDirectories(OUT_DIR);
+            Files.writeString(OUT_DIR.resolve("triage.md"), markdown);
         } catch (Exception e) {
             System.err.println("[triage] не удалось сохранить отчёт: " + e.getMessage());
         }

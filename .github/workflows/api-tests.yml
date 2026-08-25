@@ -6,6 +6,11 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write      # advisory-шаг оставляет разбор комментарием в PR
+
+concurrency:                # новый пуш в ветку отменяет прошлый прогон, а не копит очередь
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -37,6 +42,13 @@ jobs:
       - name: API-тесты
         run: mvn -B -pl api-tests test
 
+      - name: Лог сервиса при падении
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-log
+          path: service.log
+
       - name: Отчёт Surefire как артефакт
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +66,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
       - uses: actions/download-artifact@v4
         with:
           name: surefire-reports
@@ -68,6 +87,12 @@ jobs:
           OLLAMA_MODEL: llama3.1:8b     # версия модели пиннится: latest в CI не бывает
           TRIAGE_ENABLED: 'true'        # выключение шага одной переменной
         run: java -jar triage/target/triage.jar --input api-tests/target/surefire-reports
+
+      - name: Разбор — комментарием в PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file triage/target/triage.md
 
       - name: Промпт и ответ модели — в артефакты
         if: always()

@@ -42,10 +42,14 @@ docker exec otus-ai-qa-ollama ollama pull llama3.1:8b
 ## Сборка и тесты
 
 ```shell
-mvn -q -DskipTests package
+./mvnw -q -DskipTests package
 java -jar user-service/target/user-service-*.jar &
-mvn -pl api-tests test
+./mvnw test
 ```
+
+Maven ставить не нужно — в проекте лежит wrapper. Полный прогон даёт **34 теста**: 22 API-теста
+и 12 модульных у `triage`. Модульные тесты сервис не требуют; API-тесты без поднятого сервиса
+падают с внятным сообщением, а не двумя десятками `ConnectException`.
 
 Тесты ждут сервис на `http://localhost:8080`; другой адрес — `-Dservice.url=...`.
 Отчёт Surefire остаётся в `api-tests/target/surefire-reports/` — это и есть вход LLM-шага.
@@ -55,6 +59,9 @@ mvn -pl api-tests test
 ```shell
 # разбор прогона: читает отчёт Surefire, спрашивает модель, проверяет ответ по схеме
 java -jar triage/target/triage.jar --input api-tests/target/surefire-reports
+
+# то же на сохранённом отчёте с падениями — пример входа, ничего ломать не нужно
+java -jar triage/target/triage.jar --input samples/surefire-failed
 
 # черновик конвейера по промпту
 java -jar triage/target/triage.jar --generate prompts/pipeline-gen.md
@@ -68,6 +75,8 @@ java -jar triage/target/triage.jar --generate prompts/pipeline-gen.md
 | `OLLAMA_MODEL` | `llama3.1:8b` | версия модели пиннится явно, `latest` в CI не используется |
 | `TRIAGE_ENABLED` | `true` | выключение шага одной переменной |
 | `TRIAGE_CACHE` | `.triage-cache` | кэш ответов по хешу «модель + промпт» |
+| `TRIAGE_PROMPT` | `prompts/triage.md` | путь к промпту |
+| `TRIAGE_OUT` | `triage/target` | куда класть промпт, ответ и отчёт |
 
 Свойства шага, ради которых он так устроен:
 
@@ -77,12 +86,20 @@ java -jar triage/target/triage.jar --generate prompts/pipeline-gen.md
 - **кэш**: тот же отчёт — тот же ответ, без обращения к модели;
 - **fail-soft**: модель недоступна или ответила мусором — в отчёт уходит строка «шаг пропущен»,
   сборка остаётся зелёной. Шаг advisory и ничего не блокирует;
-- **прозрачность**: фактический промпт и ответ сохраняются в `triage/target/` и уезжают в артефакты сборки.
+- **прозрачность**: фактический промпт и ответ сохраняются в `triage/target/` и уезжают в артефакты сборки;
+- **санитизация**: перед отправкой в модель из текста падений вычищаются токены, пароли,
+  заголовки `Authorization` и адреса почты — `Sanitizer`, покрыт модульными тестами.
+
+`samples/surefire-failed/` — сохранённый отчёт с тремя падениями разной природы (баг, флак,
+недоступное окружение). Нужен как пример входа: на нём видно, что шаг различает причины,
+и для этого не приходится ничего ломать в рабочих тестах.
 
 ## Замечания, проверенные на этом проекте
 
 - RestAssured **6.0.1**: версия 5.5.0 на актуальных JDK падает `NullPointerException` внутри Groovy
   на GET, PUT и DELETE. Если увидите такую ошибку — дело в версии библиотеки, а не в тестах.
+- API-тесты требуют поднятого сервиса — это осознанно: они ходят по HTTP, как настоящие.
+  Проверка доступности сделана один раз в `ApiTestBase`, чтобы диагноз был читаемым.
 - Модуль `triage` упакован `spring-boot-maven-plugin`, хотя Spring в нём не используется: плагин уже
   есть в проекте и кладёт зависимости внутрь jar без дополнительной настройки.
 

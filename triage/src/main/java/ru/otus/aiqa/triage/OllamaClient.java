@@ -68,7 +68,12 @@ final class OllamaClient {
             } catch (Exception e) {
                 last = e;
                 System.err.println("[triage] попытка " + attempt + " не удалась: " + e.getMessage());
-                Thread.sleep(1000L * attempt);
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();   // флаг прерывания не теряем
+                    throw interrupted;
+                }
             }
         }
         throw last;
