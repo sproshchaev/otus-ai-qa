@@ -1,5 +1,6 @@
 target/
 .triage-cache/
+.review-cache/
 *.log
 .idea/
 *.iml

@@ -103,3 +103,52 @@ jobs:
             triage/target/triage-prompt.txt
             triage/target/triage-response.json
             triage/target/triage.md
+
+  test-review:
+    name: Ревью изменённых автотестов (advisory)
+    if: github.event_name == 'pull_request'
+    continue-on-error: true          # шаг ничего не блокирует: гейт включает команда переменной
+    runs-on: self-hosted             # раннер рядом с Ollama: модель локальная, код тестов наружу не уходит
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0             # нужна база сравнения: diff считается по базовой ветке PR
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Собрать модуль review
+        run: mvn -B -q -pl review -am -DskipTests package
+
+      - name: Список изменённых файлов тестов
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed.txt
+          cat changed.txt
+
+      - name: Ревью правилами и моделью
+        env:
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.1:8b     # версия модели пиннится вместе с версией промпта
+          REVIEW_ENABLED: 'true'        # выключение шага одной переменной
+          REVIEW_MAX_FILES: '5'         # массовая правка не превращает шаг в получасовой
+          REVIEW_FAIL_ON: none          # advisory по умолчанию; гейт — осознанное решение команды
+        run: java -jar review/target/review.jar --changed changed.txt
+
+      - name: Ревью — комментарием в PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file review/target/review.md
+
+      - name: Промпт и отчёт — в артефакты
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-artifacts
+          path: |
+            review/target/review-prompt.txt
+            review/target/review.md
