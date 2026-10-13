@@ -23,6 +23,7 @@
     <module>api-tests</module>
     <module>triage</module>
     <module>review</module>
+    <module>evals</module>
   </modules>
 
   <properties>
