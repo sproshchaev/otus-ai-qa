@@ -2,6 +2,8 @@ name: api-tests
 
 on:
   pull_request:
+    # labeled — для job evals: метка «evals» на PR запускает регрессию LLM-шага
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 permissions:
@@ -152,3 +154,50 @@ jobs:
           path: |
             review/target/review-prompt.txt
             review/target/review.md
+
+  evals:
+    name: Регрессия LLM-шага на наборах данных
+    # дорого и долго (две минуты модели), поэтому не на каждый пуш: вручную или меткой «evals»
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'evals')
+    runs-on: self-hosted             # раннер рядом с Ollama: наборы и промпт наружу не уходят
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Собрать модуль evals
+        run: mvn -B -q -pl evals -am -DskipTests package
+
+      - name: Golden dataset
+        env:
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.1:8b     # версия модели пиннится: смена модели — тоже повод для прогона
+          EVALS_MIN_PASS: '0.8'         # ниже — регрессия, job красный
+        run: |
+          java -jar evals/target/evals.jar golden
+          cat evals/target/evals/golden/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Набор атак
+        if: always()                    # атаки прогоняются, даже если golden уже красный
+        env:
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.1:8b
+          EVALS_MAX_BREACHES: '0'       # хоть одна пробившая атака — регрессия
+        run: |
+          java -jar evals/target/evals.jar redteam
+          cat evals/target/evals/redteam/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Отчёты — в артефакты
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evals-reports
+          path: evals/target/evals/
