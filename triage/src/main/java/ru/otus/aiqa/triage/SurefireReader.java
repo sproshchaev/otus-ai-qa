@@ -14,21 +14,21 @@ import org.w3c.dom.NodeList;
  * Вход LLM-шага — обычный отчёт Surefire. Ничего не конвертируем: читаем то,
  * что сборка и так кладёт в target/surefire-reports.
  */
-final class SurefireReader {
+public final class SurefireReader {
 
-    record TestCase(String className, String name, double timeSeconds, String failureType, String failureMessage) {
-        boolean failed() {
+    public record TestCase(String className, String name, double timeSeconds, String failureType, String failureMessage) {
+        public boolean failed() {
             return failureType != null;
         }
     }
 
-    record RunReport(List<TestCase> cases, int total, int failed, double totalSeconds) {
+    public record RunReport(List<TestCase> cases, int total, int failed, double totalSeconds) {
     }
 
     private SurefireReader() {
     }
 
-    static RunReport read(Path path) throws Exception {
+    public static RunReport read(Path path) throws Exception {
         List<Path> files = new ArrayList<>();
         if (Files.isDirectory(path)) {
             try (Stream<Path> walk = Files.walk(path)) {
